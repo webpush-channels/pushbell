@@ -16,7 +16,7 @@
         const audio = new Audio("bell.ogg");
 
         bell.onclick = () => {
-          sendJson(`${SERVER}/channels/${CHANNEL}`);
+          sendJson(`${SERVER}/channels/${CHANNEL}`);  // No body for this use case.
         };
         navigator.serviceWorker.onmessage = function(event) {
           console.log("Message received", event);
@@ -27,23 +27,21 @@
           .then((registration) => {
             return registration.pushManager.getSubscription()
               .then((subscription) => {
-                // Returning user?
                 if (subscription) {
-                  return subscription;
+                  return;  // Returning user, nothing to do.
                 }
-                return registration.pushManager.subscribe({ userVisibleOnly: true });
-              });
-          })
-          .then((subscription) => {
-            subscription = subscription.toJSON();
-
-            // Send the subscription to webpush-channels.
-            sendJson(`${SERVER}/subscriptions`, {body: {data: subscription}})
-              .then(() => {
-                // Register to a channel (e.g. "bell")
-                return sendJson(`${SERVER}/channels/${CHANNEL}/registration`, {
-                  method: "PUT"
-                });
+                return registration.pushManager.subscribe({ userVisibleOnly: true })
+                  .then((subscription) => {
+                    subscription = subscription.toJSON();
+                    // Send the subscription to webpush-channels.
+                    sendJson(`${SERVER}/subscriptions`, {body: {data: subscription}})
+                      .then(() => {
+                        // Register to a channel (e.g. "bell")
+                        return sendJson(`${SERVER}/channels/${CHANNEL}/registration`, {
+                          method: "PUT"
+                        });
+                      });
+                  });
               });
           });
 
