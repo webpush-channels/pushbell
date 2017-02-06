@@ -1,0 +1,62 @@
+<html>
+<head>
+</head>
+<body>
+    <button id="bell">Ring!</button>
+
+    <script type="text/javascript">
+        if (!('serviceWorker' in navigator && 'PushManager' in window)) {
+          throw new Error("Push not supported.");
+        }
+
+        const SERVER = "http://10.243.33.126:9999/v0";
+        const CHANNEL = "bell";
+
+        const bell = document.getElementById("bell");
+        const audio = new Audio("bell.ogg");
+
+        bell.onclick = () => {
+          sendJson(`${SERVER}/channels/${CHANNEL}`);
+        };
+        navigator.serviceWorker.onmessage = function(event) {
+          console.log("Message received", event);
+          audio.play();
+        };
+
+        navigator.serviceWorker.register('service-worker.js')
+          .then((registration) => {
+            return registration.pushManager.getSubscription()
+              .then((subscription) => {
+                // Returning user?
+                if (subscription) {
+                  return subscription;
+                }
+                return registration.pushManager.subscribe({ userVisibleOnly: true });
+              });
+          })
+          .then((subscription) => {
+            subscription = subscription.toJSON();
+
+            // Send the subscription to webpush-channels.
+            sendJson(`${SERVER}/subscriptions`, {body: {data: subscription}})
+              .then(() => {
+                // Register to a channel (e.g. "bell")
+                return sendJson(`${SERVER}/channels/${CHANNEL}/registration`, {
+                  method: "PUT"
+                });
+              });
+          });
+
+          function sendJson(url, options = {method: "POST"}) {
+            return fetch(url, {
+              method: options.method,
+              headers: {
+                'Content-type': 'application/json',
+                'Authorization': 'Basic bWF0Og=='
+              },
+              body: JSON.stringify(options.body)
+            });
+          }
+    </script>
+</body>
+</html>
