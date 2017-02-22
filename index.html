@@ -49,7 +49,7 @@
 
           function sendJson(url, options = {method: "POST"}) {
             return fetch(url, {
-              method: options.method,
+              method: options.method || "POST",
               headers: {
                 'Content-type': 'application/json',
                 'Authorization': 'Basic bWF0Og=='
